@@ -1,0 +1,15 @@
+{
+  "name": "signalling-server",
+  "version": "0.0.1",
+  "description": "negotiate p2p connection",
+  "main": "index.js",
+  "repository": "https://github.com/dbchristopher/p2p-air-hockey.git",
+  "author": "Daniel Christopher <dbchristopher@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "express": "^4.17.1",
+    "uuid": "^8.1.0",
+    "ws": "^7.3.0"
+  }
+}
