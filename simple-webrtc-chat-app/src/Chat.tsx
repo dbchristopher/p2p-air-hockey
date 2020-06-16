@@ -11,6 +11,10 @@ import { Header, Loader } from "semantic-ui-react";
 import SweetAlert from "react-bootstrap-sweetalert";
 import UsersList from "./UsersList";
 
+const configuration = {
+  iceServers: [{ urls: "stun:stun.1.google.com:19302" }],
+};
+
 const Chat: FC<any> = ({
   connection,
   updateConnection,
@@ -32,7 +36,29 @@ const Chat: FC<any> = ({
 
   const [users, setUsers] = useState([]);
 
-  const handleConnection = (arg: any) => {};
+  const handleDataChannelMessageReceived = (...args: any) => {
+    console.log(args);
+  };
+
+  const handleConnection = (name: any) => {
+    let dataChannel = connection.createDataChannel("messenger");
+    dataChannel.onerror = (error: any) => {
+      setAlert(
+        <SweetAlert
+          warning
+          confirmBtnBsStyle="danger"
+          title="Failed"
+          onConfirm={closeAlert}
+          onCancel={closeAlert}
+        >
+          An error has occurred.
+        </SweetAlert>
+      );
+    };
+    dataChannel.onmessage = handleDataChannelMessageReceived;
+    updateChannel(dataChannel);
+  };
+
   const updateUsersList = (arg: any) => {};
   const removeUser = (arg: any) => {};
   const onOffer = (arg: any) => {};
@@ -57,6 +83,27 @@ const Chat: FC<any> = ({
       );
       setIsLoggedIn(true);
       setUsers(loggedIn);
+      let localConnection = new RTCPeerConnection(configuration);
+      //when the browser finds an ice candidate we send it to another peer
+      localConnection.onicecandidate = ({ candidate }) => {
+        let connectedTo = connectedRef.current;
+        if (candidate && !!connectedTo) {
+          send({
+            name: connectedTo,
+            type: "candidate",
+            candidate,
+          });
+        }
+      };
+      localConnection.ondatachannel = (event) => {
+        let receiveChannel = event.channel;
+        receiveChannel.onopen = () => {
+          console.log("Data channel is open and ready to be used.");
+        };
+        receiveChannel.onmessage = handleDataChannelMessageReceived;
+        updateChannel(receiveChannel);
+      };
+      updateConnection(localConnection);
     } else {
       setAlert(
         <SweetAlert
