@@ -15,6 +15,14 @@ const wss = new WebSocket.Server({ server });
 
 let users = {};
 
+const formatUserList = (users) => {
+  const loggedIn = Object.values(users).map(({ id, name: userName }) => ({
+    id,
+    userName,
+  }));
+  return loggedIn;
+};
+
 const sendTo = (connection, message) => {
   connection.send(JSON.stringify(message));
 };
@@ -55,18 +63,15 @@ wss.on("connection", (ws) => {
           });
         } else {
           const id = uuidv4();
-          const loggedIn = Object.values(
-            users
-          ).map(({ id, name: userName }) => ({ id, userName }));
           users[name] = ws;
           ws.name = name;
           ws.id = id;
           sendTo(ws, {
             type: "login",
             success: true,
-            users: loggedIn,
+            users: formatUserList(users),
           });
-          sendToAll(users, "updateUsers", ws);
+          sendToAll(users, "addUser", ws);
         }
         break;
       case "offer":
@@ -131,6 +136,7 @@ wss.on("connection", (ws) => {
     JSON.stringify({
       type: "connect",
       message: "Well hello there, I am a WebSocket server",
+      users: formatUserList(users),
     })
   );
 });

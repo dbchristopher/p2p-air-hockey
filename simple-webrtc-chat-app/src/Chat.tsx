@@ -19,9 +19,6 @@ const configuration = {
   iceServers: [{ urls: "stun:stun.1.google.com:19302" }],
 };
 
-// Use for local connections
-// const configuration = null;
-
 const Chat = ({
   connection,
   updateConnection,
@@ -44,7 +41,7 @@ const Chat = ({
   const [messages, setMessages] = useState({});
 
   useEffect(() => {
-    // initiate connection on load
+    // initiate websocket connection on load
     if (process.env.REACT_APP_WEBSOCKET_URL) {
       webSocket.current = new WebSocket(process.env.REACT_APP_WEBSOCKET_URL);
       webSocket.current.onmessage = (message: any) => {
@@ -59,18 +56,21 @@ const Chat = ({
   }, []);
 
   useEffect(() => {
+    // manage authenticated users through websocket messages
     let data = socketMessages.pop();
-    console.log("DATA!", data);
+    console.log(data);
     if (data) {
       switch (data.type) {
         case "connect":
           setSocketOpen(true);
+          setUserList(data);
           break;
         case "login":
           onLogin(data);
+          setUserList(data);
           break;
-        case "updateUsers":
-          updateUsersList(data);
+        case "addUser":
+          addUserToList(data);
           break;
         case "removeUser":
           removeUser(data);
@@ -106,7 +106,7 @@ const Chat = ({
     });
   };
 
-  const updateUsersList = ({ user }: any) => {
+  const addUserToList = ({ user }: any) => {
     setUsers((prev: any) => [...prev, user]);
   };
 
@@ -135,7 +135,11 @@ const Chat = ({
     }
   };
 
-  const onLogin = ({ success, message, users: loggedIn }: any) => {
+  const setUserList = ({ users }: any) => {
+    setUsers(users);
+  };
+
+  const onLogin = ({ success, message }: any) => {
     setLoggingIn(false);
     if (success) {
       setAlert(
@@ -149,7 +153,6 @@ const Chat = ({
         </SweetAlert>
       );
       setIsLoggedIn(true);
-      setUsers(loggedIn);
       let localConnection = new RTCPeerConnection(configuration);
       //when the browser finds an ice candidate we send it to another peer
       localConnection.onicecandidate = ({ candidate }) => {
